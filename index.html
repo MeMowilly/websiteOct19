@@ -1,105 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PIIology - Matrix Rain Effect</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap');
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PIIology - Digital Rain</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: white;
+      overflow: hidden;
+      font-family: Georgia, serif;
+    }
 
-        body {
-            margin: 0;
-            height: 100vh;
-            background-color: white;
-            overflow: hidden;
-            font-family: 'Source Sans Pro', sans-serif;
-        }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: block;
+      z-index: 0;
+    }
 
-        canvas {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 90%;
-            height: 100%;
-        }
+    #container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      text-align: center;
+      z-index: 1;
+    }
 
-        #piiology {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 5rem;
-            font-weight: bold;
-            font-family: 'Georgia', serif;
-            color: darkblue;
-            z-index: 1;
-        }
-    </style>
+    #message {
+      position: absolute;
+      top: 10%;
+      width: 100%;
+      font-size: 25pt;
+      color: darkblue;
+      opacity: 1;
+      transition: opacity 6.67s linear;
+    }
+
+    #piiology {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 50pt;
+      font-weight: bold;
+      color: darkblue;
+      opacity: 0;
+      transition: opacity 6.67s linear;
+    }
+
+    #trademark {
+      font-size: 0.25em;
+      vertical-align: super;
+      margin-left: 0.2em;
+    }
+  </style>
 </head>
 <body>
-    <div id="piiology">PIIology</div>
-    <canvas id="matrix"></canvas>
+  <canvas id="matrix"></canvas>
 
-    <script>
-        const canvas = document.getElementById('matrix');
-        const ctx = canvas.getContext('2d');
+  <div id="container">
+    <div id="message">We are working on something wonderful</div>
+    <div id="piiology">PIIology<span id="trademark">TM</span></div>
+  </div>
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+  <script>
+    // === MATRIX RAIN ===
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
 
-        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const numbers = '0123456789';
-        const controlChars = String.fromCharCode(...Array(32).keys()); // Non-visible control characters
-        const allChars = letters + numbers + controlChars;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-        const fontSize = 11;
-        const columns = Math.floor(canvas.width / fontSize);
-        const drops = Array(columns).fill(1);
-        const startDelays = Array(columns).fill(0).map(() => Math.random() * 2000);  // Random delay up to 1 seconds for each column
+    const fontSize = 16;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops = new Array(columns).fill(1);
+    const startDelays = drops.map(() => Math.random() * 2000); // up to 2s delay
 
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const controlChars = String.fromCharCode(...Array(32).keys()); // invisible
+    const allChars = [...letters, ...numbers, ...controlChars];
 
-            ctx.font = `${fontSize}px 'Source Sans Pro'`;
+    function draw() {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgb(0, 60, 0)';
+      ctx.font = fontSize + 'px Georgia';
 
-            for (let i = 0; i < drops.length; i++) {
-                if (startDelays[i] > 0) {
-                    startDelays[i] -= 50;  // Reduce delay until it hits zero
-                    continue;
-                }
-
-                let randomIndex = Math.floor(Math.random() * 100);
-                let text;
-
-                if (randomIndex < 45) {
-                    text = letters.charAt(Math.floor(Math.random() * letters.length));
-                } else if (randomIndex < 85) {
-                    text = numbers.charAt(Math.floor(Math.random() * numbers.length));
-                } else {
-                    text = controlChars.charAt(Math.floor(Math.random() * controlChars.length));
-                }
-
-                ctx.fillStyle = `rgba(0, 100, 0, 1)`;
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                    drops[i] = 0;
-                }
-
-                drops[i]++;
-            }
+      for (let i = 0; i < columns; i++) {
+        if (startDelays[i] > 0) {
+          startDelays[i] -= 50;
+          continue;
         }
 
-        setInterval(drawMatrix, 50);  // Run the drawMatrix function every 10ms
+        const rand = Math.random() * 100;
+        let char;
+        if (rand < 35) {
+          char = letters.charAt(Math.floor(Math.random() * letters.length));
+        } else if (rand < 75) {
+          char = numbers.charAt(Math.floor(Math.random() * numbers.length));
+        } else {
+          char = controlChars.charAt(Math.floor(Math.random() * controlChars.length));
+        }
 
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-    </script>
+        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+
+    setInterval(draw, 50);
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // === FADE LOGIC ===
+    window.onload = () => {
+      const piiology = document.getElementById('piiology');
+      const message = document.getElementById('message');
+
+      // Start fade
+      setTimeout(() => {
+        piiology.style.opacity = 1;
+        message.style.opacity = 0;
+      }, 100); // slight delay to allow CSS transitions
+    };
+  </script>
 </body>
 </html>
-
-
