@@ -25,6 +25,7 @@
       opacity: 0;
       transition: opacity 10s ease-in-out;
       z-index: 10;
+      pointer-events: none;
     }
 
     #trademark {
@@ -43,6 +44,7 @@
       opacity: 1;
       transition: opacity 3s ease-in-out;
       z-index: 9;
+      pointer-events: none;
     }
 
     canvas {
@@ -65,9 +67,23 @@
   <script>
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
+
+    // configuration easy to tune:
+    const fontSize = 14;                 // character size
+    const matrixWidthRatio = 0.34;       // fraction of screen width used by matrix (0.0 - 1.0)
+    const columnStaggerMs = 50;          // stagger delay between columns
+    const drawIntervalMs = 80;           // frame interval in ms (larger -> less CPU)
+
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      // columns limited to a fraction of the screen width so matrix stays on left
+      columns = Math.max(10, Math.floor((canvas.width * matrixWidthRatio) / fontSize));
+      drops = Array(columns).fill(0);
+      startDelays = new Array(columns);
+      for (let i = 0; i < columns; i++) {
+        startDelays[i] = Date.now() + i * columnStaggerMs;
+      }
     }
     resizeCanvas();
 
@@ -76,26 +92,21 @@
     const specialChars = '†‡§¶¤#@$%&*+=<>';
     const allChars = letters.repeat(2) + numbers.repeat(2) + specialChars;
 
-    // Increase font size slightly to reduce number of columns (fewer iterations)
-    const fontSize = 14;
-    let columns = Math.max(10, Math.floor(canvas.width / fontSize));
+    let columns = Math.max(10, Math.floor((canvas.width * matrixWidthRatio) / fontSize));
     let drops = Array(columns).fill(0);
     let startDelays = new Array(columns);
-
-    // Simple, guaranteed O(n) start delays (no heavy loops)
-    for (let i = 0; i < columns; i++) {
-      startDelays[i] = Date.now() + i * 50; // stagger 50ms between columns
-    }
+    for (let i = 0; i < columns; i++) startDelays[i] = Date.now() + i * columnStaggerMs;
 
     function draw() {
-      // gentle fade to create trailing effect
+      // gentle trailing fade
       ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.font = `${fontSize}px Georgia`;
+
+      // draw only in columns reserved for left side (matrixWidthRatio)
       for (let i = 0; i < columns; i++) {
         if (Date.now() < startDelays[i]) continue;
-
         const char = allChars.charAt(Math.floor(Math.random() * allChars.length));
         ctx.fillStyle = 'rgba(0, 60, 0, 0.9)';
         ctx.fillText(char, i * fontSize, drops[i] * fontSize);
@@ -107,10 +118,9 @@
       }
     }
 
-    // Slower interval to reduce CPU usage (80ms ≈ 12.5 FPS)
-    let intervalId = setInterval(draw, 80);
+    let intervalId = setInterval(draw, drawIntervalMs);
 
-    // Animation Sequence
+    // Animation Sequence (fade logic)
     const piiology = document.getElementById('piiology');
     const message = document.getElementById('message');
 
@@ -119,20 +129,22 @@
       piiology.style.opacity = 1;
     }, 3000);
 
-    // Fade out message only after fade-in completes
-    setTimeout(() => {
-      message.style.opacity = 0;
-    }, 13000); // 3s delay + 10s fade
+    // When the title's CSS transition ends, fade the message out
+    const onTitleTransitionEnd = (e) => {
+      if (e.propertyName === 'opacity') {
+        // small extra pause after title finishes
+        setTimeout(() => {
+          message.style.opacity = 0;
+        }, 300); // 300ms pause after title fully visible
+        // remove listener so it doesn't run again
+        piiology.removeEventListener('transitionend', onTitleTransitionEnd);
+      }
+    };
+    piiology.addEventListener('transitionend', onTitleTransitionEnd);
 
     // Resize handler: recalculates columns/drops safely
     window.addEventListener('resize', () => {
       resizeCanvas();
-      columns = Math.max(10, Math.floor(canvas.width / fontSize));
-      drops = Array(columns).fill(0);
-      startDelays = new Array(columns);
-      for (let i = 0; i < columns; i++) {
-        startDelays[i] = Date.now() + i * 50;
-      }
     });
   </script>
 </body>
