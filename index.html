@@ -74,6 +74,12 @@
     const columnStaggerMs = 50;          // stagger delay between columns
     const drawIntervalMs = 80;           // frame interval in ms (larger -> less CPU)
 
+    // Declare these before resizeCanvas runs to avoid ReferenceError.
+    // They will be initialized (assigned) inside resizeCanvas().
+    let columns = 0;
+    let drops = [];
+    let startDelays = [];
+
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -91,11 +97,6 @@
     const numbers = '0123456789';
     const specialChars = '†‡§¶¤#@$%&*+=<>';
     const allChars = letters.repeat(2) + numbers.repeat(2) + specialChars;
-
-    let columns = Math.max(10, Math.floor((canvas.width * matrixWidthRatio) / fontSize));
-    let drops = Array(columns).fill(0);
-    let startDelays = new Array(columns);
-    for (let i = 0; i < columns; i++) startDelays[i] = Date.now() + i * columnStaggerMs;
 
     function draw() {
       // gentle trailing fade
@@ -118,7 +119,11 @@
       }
     }
 
-    let intervalId = setInterval(draw, drawIntervalMs);
+    // Ensure we don't create multiple intervals if the script runs more than once.
+    if (window.intervalId) {
+      clearInterval(window.intervalId);
+    }
+    window.intervalId = setInterval(draw, drawIntervalMs);
 
     // Animation Sequence (fade logic)
     const piiology = document.getElementById('piiology');
