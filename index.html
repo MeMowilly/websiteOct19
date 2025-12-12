@@ -68,41 +68,42 @@
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
 
-    // configuration easy to tune:
-    const fontSize = 14;                 // character size
-    const matrixWidthRatio = 0.34;       // fraction of screen width reserved for matrix (0.0 - 1.0)
+    // configuration (tweak these values if you want a narrower/wider matrix)
+    const fontSize = 16;                 // slightly larger -> fewer columns
+    const matrixWidthRatio = 0.25;       // preferred fraction of screen width for matrix
     const columnStaggerMs = 50;          // stagger delay between columns
     const drawIntervalMs = 80;           // frame interval in ms (larger -> less CPU)
-    const matrixMaxCenterEdgeRatio = 0.45; // absolute maximum fraction (safe guard so matrix never crosses center area)
+    const matrixMaxCenterEdgeRatio = 0.33; // safety cap (keeps matrix well left of center)
+    const matrixLeftPadding = 12;        // px padding from left edge before columns start
 
-    // Declare these before resizeCanvas runs
+    // Declare before use
     let columns = 0;
     let drops = [];
     let startDelays = [];
 
-    // interval control
+    // interval control (avoid duplicates)
     if (window.intervalId) {
       clearInterval(window.intervalId);
       window.intervalId = null;
     }
 
-    // Helper that computes allowed pixel width for matrix (capped)
+    // compute allowed pixel width for matrix (capped so it won't cross center)
     function computeMatrixPixelWidth() {
-      const reserved = Math.min(canvas.width * matrixWidthRatio, canvas.width * matrixMaxCenterEdgeRatio);
-      // ensure at least one column area exists
-      return Math.max(reserved, fontSize * 10);
+      const w = canvas.width;
+      const preferred = w * matrixWidthRatio;
+      const capped = Math.min(preferred, w * matrixMaxCenterEdgeRatio);
+      return Math.max(capped, fontSize * 10); // ensure reasonable minimum area
     }
 
     function resizeCanvas() {
-      // keep pixel-perfect size
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      // compute how many columns fit into the reserved pixel width
-      const pixelWidth = computeMatrixPixelWidth();
-      columns = Math.max(10, Math.floor(pixelWidth / fontSize));
+      const pixelWidth = Math.floor(computeMatrixPixelWidth());
+      // subtract left padding so the actual drawing area stays away from edge
+      const usable = Math.max(pixelWidth - matrixLeftPadding, fontSize * 10);
+      columns = Math.max(10, Math.floor(usable / fontSize));
 
-      // initialize arrays for drop positions and staggered starts
       drops = Array(columns).fill(0);
       startDelays = new Array(columns);
       const now = Date.now();
@@ -111,21 +112,18 @@
       }
     }
 
-    // initialize once on load (ensures canvas and columns are stable before draw starts)
+    // initialize and start animation loop only after we compute columns
     function initAndStart() {
       resizeCanvas();
-      // draw one frame immediately so layout looks sensible before interval begins
-      draw();
-      // ensure any previous interval is cleared
+      draw(); // draw initial frame immediately to avoid visual jump
       if (window.intervalId) clearInterval(window.intervalId);
       window.intervalId = setInterval(draw, drawIntervalMs);
     }
 
-    // small debounce for resize to avoid rapid reinitialization
+    // debounce resize to avoid rapid reinit
     let resizeTimer = null;
     window.addEventListener('resize', () => {
       if (resizeTimer) clearTimeout(resizeTimer);
-      // wait a short amount of time for layout to settle (helps avoid jumps)
       resizeTimer = setTimeout(() => {
         resizeTimer = null;
         resizeCanvas();
@@ -138,19 +136,20 @@
     const allChars = letters.repeat(2) + numbers.repeat(2) + specialChars;
 
     function draw() {
-      // gentle trailing fade
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      // gentle trailing fade (keeps background readable)
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.font = `${fontSize}px Georgia`;
       ctx.textBaseline = 'top';
 
-      // draw only in the left columns reserved for the matrix
+      // draw only within the reserved left area; apply left padding
       for (let i = 0; i < columns; i++) {
         if (Date.now() < startDelays[i]) continue;
         const char = allChars.charAt(Math.floor(Math.random() * allChars.length));
-        ctx.fillStyle = 'rgba(0, 60, 0, 0.9)';
-        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+        ctx.fillStyle = 'rgba(0,70,0,0.9)';
+        const x = matrixLeftPadding + i * fontSize;
+        ctx.fillText(char, x, drops[i] * fontSize);
 
         if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
           drops[i] = 0;
@@ -163,23 +162,19 @@
     const piiology = document.getElementById('piiology');
     const message = document.getElementById('message');
 
-    // Start the animation after window load so fonts and layout are done
+    // Start after load so fonts & layout are settled
     window.addEventListener('load', () => {
       initAndStart();
 
-      // Start fade-in after 3 seconds of rain (unchanged)
+      // fade-in title after a short delay so the matrix is visible first
       setTimeout(() => {
         piiology.style.opacity = 1;
       }, 3000);
 
-      // When the title's CSS transition ends, fade the message out
+      // fade the message only after title's opacity transition completes
       const onTitleTransitionEnd = (e) => {
         if (e.propertyName === 'opacity') {
-          // small extra pause after title finishes
-          setTimeout(() => {
-            message.style.opacity = 0;
-          }, 300);
-          // remove listener after first run
+          setTimeout(() => { message.style.opacity = 0; }, 300);
           piiology.removeEventListener('transitionend', onTitleTransitionEnd);
         }
       };
