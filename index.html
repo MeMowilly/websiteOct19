@@ -1,18 +1,139 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PIIology — test</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PIIology</title>
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#fff;color:#123;}
-    .box{ text-align:center; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: white;
+      color: darkblue;
+      font-family: Georgia, serif;
+      overflow: hidden;
+    }
+
+    #piiology {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 50pt;
+      font-weight: bold;
+      color: darkblue;
+      opacity: 0;
+      transition: opacity 10s ease-in-out;
+      z-index: 10;
+    }
+
+    #trademark {
+      font-size: 0.25em;
+      vertical-align: super;
+      margin-left: 0.2em;
+    }
+
+    #message {
+      position: absolute;
+      top: calc(40% + 4em);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 25pt;
+      color: darkblue;
+      opacity: 1;
+      transition: opacity 3s ease-in-out;
+      z-index: 9;
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>PIIology — Site test page</h1>
-    <p>If you see this, GitHub Pages is serving the site correctly.</p>
+
+  <div id="piiology">
+    PIIology<span id="trademark">™</span>
   </div>
+  <div id="message">We are working on something wonderful</div>
+  <canvas id="matrix"></canvas>
+
+  <script>
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    const specialChars = '†‡§¶¤#@$%&*+=<>';
+    const allChars = letters.repeat(2) + numbers.repeat(2) + specialChars;
+
+    // Increase font size slightly to reduce number of columns (fewer iterations)
+    const fontSize = 14;
+    let columns = Math.max(10, Math.floor(canvas.width / fontSize));
+    let drops = Array(columns).fill(0);
+    let startDelays = new Array(columns);
+
+    // Simple, guaranteed O(n) start delays (no heavy loops)
+    for (let i = 0; i < columns; i++) {
+      startDelays[i] = Date.now() + i * 50; // stagger 50ms between columns
+    }
+
+    function draw() {
+      // gentle fade to create trailing effect
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.font = `${fontSize}px Georgia`;
+      for (let i = 0; i < columns; i++) {
+        if (Date.now() < startDelays[i]) continue;
+
+        const char = allChars.charAt(Math.floor(Math.random() * allChars.length));
+        ctx.fillStyle = 'rgba(0, 60, 0, 0.9)';
+        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+
+    // Slower interval to reduce CPU usage (80ms ≈ 12.5 FPS)
+    let intervalId = setInterval(draw, 80);
+
+    // Animation Sequence
+    const piiology = document.getElementById('piiology');
+    const message = document.getElementById('message');
+
+    // Start fade-in after 3 seconds of rain
+    setTimeout(() => {
+      piiology.style.opacity = 1;
+    }, 3000);
+
+    // Fade out message only after fade-in completes
+    setTimeout(() => {
+      message.style.opacity = 0;
+    }, 13000); // 3s delay + 10s fade
+
+    // Resize handler: recalculates columns/drops safely
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      columns = Math.max(10, Math.floor(canvas.width / fontSize));
+      drops = Array(columns).fill(0);
+      startDelays = new Array(columns);
+      for (let i = 0; i < columns; i++) {
+        startDelays[i] = Date.now() + i * 50;
+      }
+    });
+  </script>
 </body>
 </html>
