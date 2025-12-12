@@ -70,28 +70,67 @@
 
     // configuration easy to tune:
     const fontSize = 14;                 // character size
-    const matrixWidthRatio = 0.34;       // fraction of screen width used by matrix (0.0 - 1.0)
+    const matrixWidthRatio = 0.34;       // fraction of screen width reserved for matrix (0.0 - 1.0)
     const columnStaggerMs = 50;          // stagger delay between columns
     const drawIntervalMs = 80;           // frame interval in ms (larger -> less CPU)
+    const matrixMaxCenterEdgeRatio = 0.45; // absolute maximum fraction (safe guard so matrix never crosses center area)
 
-    // Declare these before resizeCanvas runs to avoid ReferenceError.
-    // They will be initialized (assigned) inside resizeCanvas().
+    // Declare these before resizeCanvas runs
     let columns = 0;
     let drops = [];
     let startDelays = [];
 
+    // interval control
+    if (window.intervalId) {
+      clearInterval(window.intervalId);
+      window.intervalId = null;
+    }
+
+    // Helper that computes allowed pixel width for matrix (capped)
+    function computeMatrixPixelWidth() {
+      const reserved = Math.min(canvas.width * matrixWidthRatio, canvas.width * matrixMaxCenterEdgeRatio);
+      // ensure at least one column area exists
+      return Math.max(reserved, fontSize * 10);
+    }
+
     function resizeCanvas() {
+      // keep pixel-perfect size
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      // columns limited to a fraction of the screen width so matrix stays on left
-      columns = Math.max(10, Math.floor((canvas.width * matrixWidthRatio) / fontSize));
+
+      // compute how many columns fit into the reserved pixel width
+      const pixelWidth = computeMatrixPixelWidth();
+      columns = Math.max(10, Math.floor(pixelWidth / fontSize));
+
+      // initialize arrays for drop positions and staggered starts
       drops = Array(columns).fill(0);
       startDelays = new Array(columns);
+      const now = Date.now();
       for (let i = 0; i < columns; i++) {
-        startDelays[i] = Date.now() + i * columnStaggerMs;
+        startDelays[i] = now + i * columnStaggerMs;
       }
     }
-    resizeCanvas();
+
+    // initialize once on load (ensures canvas and columns are stable before draw starts)
+    function initAndStart() {
+      resizeCanvas();
+      // draw one frame immediately so layout looks sensible before interval begins
+      draw();
+      // ensure any previous interval is cleared
+      if (window.intervalId) clearInterval(window.intervalId);
+      window.intervalId = setInterval(draw, drawIntervalMs);
+    }
+
+    // small debounce for resize to avoid rapid reinitialization
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      // wait a short amount of time for layout to settle (helps avoid jumps)
+      resizeTimer = setTimeout(() => {
+        resizeTimer = null;
+        resizeCanvas();
+      }, 120);
+    });
 
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const numbers = '0123456789';
@@ -104,8 +143,9 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.font = `${fontSize}px Georgia`;
+      ctx.textBaseline = 'top';
 
-      // draw only in columns reserved for left side (matrixWidthRatio)
+      // draw only in the left columns reserved for the matrix
       for (let i = 0; i < columns; i++) {
         if (Date.now() < startDelays[i]) continue;
         const char = allChars.charAt(Math.floor(Math.random() * allChars.length));
@@ -119,37 +159,31 @@
       }
     }
 
-    // Ensure we don't create multiple intervals if the script runs more than once.
-    if (window.intervalId) {
-      clearInterval(window.intervalId);
-    }
-    window.intervalId = setInterval(draw, drawIntervalMs);
-
     // Animation Sequence (fade logic)
     const piiology = document.getElementById('piiology');
     const message = document.getElementById('message');
 
-    // Start fade-in after 3 seconds of rain
-    setTimeout(() => {
-      piiology.style.opacity = 1;
-    }, 3000);
+    // Start the animation after window load so fonts and layout are done
+    window.addEventListener('load', () => {
+      initAndStart();
 
-    // When the title's CSS transition ends, fade the message out
-    const onTitleTransitionEnd = (e) => {
-      if (e.propertyName === 'opacity') {
-        // small extra pause after title finishes
-        setTimeout(() => {
-          message.style.opacity = 0;
-        }, 300); // 300ms pause after title fully visible
-        // remove listener so it doesn't run again
-        piiology.removeEventListener('transitionend', onTitleTransitionEnd);
-      }
-    };
-    piiology.addEventListener('transitionend', onTitleTransitionEnd);
+      // Start fade-in after 3 seconds of rain (unchanged)
+      setTimeout(() => {
+        piiology.style.opacity = 1;
+      }, 3000);
 
-    // Resize handler: recalculates columns/drops safely
-    window.addEventListener('resize', () => {
-      resizeCanvas();
+      // When the title's CSS transition ends, fade the message out
+      const onTitleTransitionEnd = (e) => {
+        if (e.propertyName === 'opacity') {
+          // small extra pause after title finishes
+          setTimeout(() => {
+            message.style.opacity = 0;
+          }, 300);
+          // remove listener after first run
+          piiology.removeEventListener('transitionend', onTitleTransitionEnd);
+        }
+      };
+      piiology.addEventListener('transitionend', onTitleTransitionEnd);
     });
   </script>
 </body>
