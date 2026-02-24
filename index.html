@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PIIology - Digital Rain</title>
   <style>
+    :root{
+      --msgSize: clamp(39px, 4.8vw, 66px);
+    }
+
     body {
       margin: 0;
       background-color: white;
@@ -26,16 +30,17 @@
       height: 100vh;
       text-align: center;
       z-index: 1;
+      pointer-events: none;
     }
 
     #message {
       position: absolute;
       top: 10%;
       width: 100%;
-      font-size: 25pt;
+      font-size: var(--msgSize);
       color: darkblue;
-      opacity: 1;
-      transition: opacity 6.67s linear;
+      opacity: 0;
+      transition: opacity 3.2s cubic-bezier(0.55, 0.0, 1.0, 1.0);
     }
 
     #piiology {
@@ -43,11 +48,13 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 50pt;
+      font-size: calc(var(--msgSize) * 1.728);
       font-weight: bold;
       color: darkblue;
       opacity: 0;
-      transition: opacity 6.67s linear;
+      z-index: 2;
+      white-space: nowrap;
+      transition: opacity 6s ease-in-out; /* overridden by JS */
     }
 
     #trademark {
@@ -66,72 +73,123 @@
   </div>
 
   <script>
-    // === MATRIX RAIN ===
+    // ===== RAIN =====
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const fontSize = 16;
-    const columns = Math.floor(canvas.width / fontSize);
-    const drops = new Array(columns).fill(1);
-    const startDelays = drops.map(() => Math.random() * 2000); // up to 2s delay
+    function sizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    sizeCanvas();
 
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const numbers = '0123456789';
-    const controlChars = String.fromCharCode(...Array(32).keys()); // invisible
-    const allChars = [...letters, ...numbers, ...controlChars];
+    const controlChars = String.fromCharCode(...Array(32).keys()); // (square cleanup later)
 
-    function draw() {
+    const fontSize = 16;
+    const intervalMs = 50;
+
+    let columns = Math.floor(canvas.width / fontSize);
+    let drops = Array(columns).fill(1);
+    let startDelays = Array(columns).fill(0).map(() => Math.random() * 2000);
+
+    function drawMatrix() {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgb(0, 60, 0)';
-      ctx.font = fontSize + 'px Georgia';
 
-      for (let i = 0; i < columns; i++) {
+      ctx.font = `${fontSize}px monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
         if (startDelays[i] > 0) {
-          startDelays[i] -= 50;
+          startDelays[i] -= intervalMs;
           continue;
         }
 
-        const rand = Math.random() * 100;
-        let char;
-        if (rand < 35) {
-          char = letters.charAt(Math.floor(Math.random() * letters.length));
-        } else if (rand < 75) {
-          char = numbers.charAt(Math.floor(Math.random() * numbers.length));
+        const randomIndex = Math.floor(Math.random() * 100);
+        let ch;
+
+        if (randomIndex < 45) {
+          ch = letters.charAt(Math.floor(Math.random() * letters.length));
+        } else if (randomIndex < 85) {
+          ch = numbers.charAt(Math.floor(Math.random() * numbers.length));
         } else {
-          char = controlChars.charAt(Math.floor(Math.random() * controlChars.length));
+          ch = controlChars.charAt(Math.floor(Math.random() * controlChars.length));
         }
 
-        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+        ctx.fillStyle = 'rgb(0, 100, 0)';
+        ctx.fillText(ch, i * fontSize, drops[i] * fontSize);
 
         if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
           drops[i] = 0;
         }
+
         drops[i]++;
       }
     }
 
-    setInterval(draw, 50);
+    setInterval(drawMatrix, intervalMs);
 
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    // ===== SEQUENCING =====
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function computeRainTimings() {
+      const rows = canvas.height / fontSize;
+      const fps = 1000 / intervalMs;
+      const travelTimeMs = (rows / fps) * 1000;
+      const maxStartDelayMs = startDelays.reduce((m, v) => Math.max(m, v), 0);
+      return { travelTimeMs, maxStartDelayMs };
+    }
+
+    window.addEventListener('load', () => {
+      const message = document.getElementById('message');
+      const piiology = document.getElementById('piiology');
+
+      const { travelTimeMs, maxStartDelayMs } = computeRainTimings();
+
+      // Base start calculation: rain ~25% down + ~65% streams started
+      let messageStartDelay = (0.25 * travelTimeMs) + (0.65 * maxStartDelayMs);
+
+      // Start 50% sooner than Version 6 (0.125 -> 0.0625)
+      messageStartDelay = clamp(messageStartDelay * 0.0625, 80, 1800);
+
+      const rainBottomMoment = clamp(travelTimeMs + maxStartDelayMs, 2000, 9000);
+
+      let messageFadeInDuration = clamp(rainBottomMoment - messageStartDelay, 900, 7500);
+      messageFadeInDuration = clamp(messageFadeInDuration * 1.35, 900, 12000);
+
+      message.style.transition =
+        `opacity ${messageFadeInDuration}ms cubic-bezier(0.55, 0.0, 1.0, 1.0)`;
+
+      const piiologyStartDelay = messageStartDelay + (0.60 * messageFadeInDuration);
+
+      let piiologyFadeDuration = clamp(messageFadeInDuration * 0.9, 1000, 9000);
+      piiologyFadeDuration = clamp(piiologyFadeDuration * 1.35, 1000, 14000);
+      piiology.style.transition = `opacity ${piiologyFadeDuration}ms ease-in-out`;
+
+      const messageFadeOutStart = piiologyStartDelay + (0.70 * piiologyFadeDuration);
+
+      const piiologyEnd = piiologyStartDelay + piiologyFadeDuration;
+      let fadeOutDuration = clamp((piiologyEnd - messageFadeOutStart) / 0.85, 600, 12000);
+      fadeOutDuration = clamp(fadeOutDuration * 1.35, 600, 16000);
+
+      setTimeout(() => { message.style.opacity = 1; }, messageStartDelay);
+      setTimeout(() => { piiology.style.opacity = 1; }, piiologyStartDelay);
+
+      setTimeout(() => {
+        message.style.transition = `opacity ${fadeOutDuration}ms ease-out`;
+        message.style.opacity = 0;
+      }, messageFadeOutStart);
     });
 
-    // === FADE LOGIC ===
-    window.onload = () => {
-      const piiology = document.getElementById('piiology');
-      const message = document.getElementById('message');
-
-      // Start fade
-      setTimeout(() => {
-        piiology.style.opacity = 1;
-        message.style.opacity = 0;
-      }, 100); // slight delay to allow CSS transitions
-    };
+    window.addEventListener('resize', () => {
+      sizeCanvas();
+      columns = Math.floor(canvas.width / fontSize);
+      drops = Array(columns).fill(1);
+      startDelays = Array(columns).fill(0).map(() => Math.random() * 2000);
+    });
   </script>
 </body>
 </html>
