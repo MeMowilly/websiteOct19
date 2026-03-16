@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PIIology - Digital Rain</title>
+  <title>PIIology™</title>
   <style>
     :root{
-      --msgSize: clamp(39px, 4.8vw, 66px);
+      --brandSize: clamp(58px, 7vw, 110px);
+      --bodySize: clamp(24px, 2vw, 34px);
+      --noteSize: clamp(22px, 1.7vw, 28px);
+      --brandColor: rgb(0, 0, 139);
+      --panelBg: rgba(255, 255, 255, 0.55); /* about 45% transparent */
+      --panelBorder: rgba(255, 255, 255, 0.35);
     }
 
     body {
@@ -18,8 +23,7 @@
 
     canvas {
       position: fixed;
-      top: 0;
-      left: 0;
+      inset: 0;
       display: block;
       z-index: 0;
     }
@@ -28,39 +32,81 @@
       position: relative;
       width: 100%;
       height: 100vh;
-      text-align: center;
       z-index: 1;
       pointer-events: none;
     }
 
-    #message {
-      position: absolute;
-      top: 10%;
-      width: 100%;
-      font-size: var(--msgSize);
-      color: darkblue;
-      opacity: 0;
-      transition: opacity 3.2s cubic-bezier(0.55, 0.0, 1.0, 1.0);
-    }
-
     #piiology {
       position: absolute;
-      top: 50%;
+      top: 24%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: calc(var(--msgSize) * 1.728);
+      font-size: var(--brandSize);
       font-weight: bold;
-      color: darkblue;
+      color: var(--brandColor);
       opacity: 0;
-      z-index: 2;
       white-space: nowrap;
-      transition: opacity 6s ease-in-out; /* overridden by JS */
+      z-index: 2;
+      transition: opacity 4s ease-in-out;
     }
 
     #trademark {
-      font-size: 0.25em;
+      font-size: 0.24em;
       vertical-align: super;
-      margin-left: 0.2em;
+      margin-left: 0.12em;
+    }
+
+    #panel {
+      position: absolute;
+      left: 50%;
+      bottom: 10%;
+      transform: translateX(-50%);
+      width: min(88vw, 1000px);
+      background: var(--panelBg);
+      border: 1px solid var(--panelBorder);
+      border-radius: 22px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      padding: 28px 34px;
+      text-align: center;
+      color: var(--brandColor);
+      opacity: 0;
+      z-index: 3;
+      transition: opacity 2.5s ease-in-out;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+
+    #panel p {
+      margin: 0;
+      font-size: var(--bodySize);
+      line-height: 1.42;
+      font-weight: normal;
+    }
+
+    #panel .agency {
+      margin-top: 18px;
+      font-size: var(--bodySize);
+      line-height: 1.42;
+      font-weight: normal; /* no bold */
+    }
+
+    #panel .footer-note {
+      margin-top: 22px;
+      font-size: var(--noteSize);
+      line-height: 1.35;
+      font-weight: normal;
+    }
+
+    @media (max-width: 700px) {
+      #piiology {
+        top: 20%;
+      }
+
+      #panel {
+        width: 92vw;
+        bottom: 6%;
+        padding: 22px 20px;
+      }
     }
   </style>
 </head>
@@ -68,8 +114,25 @@
   <canvas id="matrix"></canvas>
 
   <div id="container">
-    <div id="message">We are working on something wonderful</div>
-    <div id="piiology">PIIology<span id="trademark">TM</span></div>
+    <div id="piiology">
+      PIIology<span id="trademark">™</span>
+    </div>
+
+    <div id="panel">
+      <p>
+        PIIology is developing a platform that gives consumers the level of control and privacy they choose over their personal data.
+        In turn, the organizations they choose to share it with gain access to higher-quality, fresher, and richer data sets for
+        onboarding, personalization, grounding, and context.
+      </p>
+
+      <div class="agency">
+        We are advancing a new model of Personal Data Agency.
+      </div>
+
+      <div class="footer-note">
+        The work has been underway for years. The movement begins now.
+      </div>
+    </div>
   </div>
 
   <script>
@@ -85,7 +148,7 @@
 
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const numbers = '0123456789';
-    const controlChars = String.fromCharCode(...Array(32).keys()); // (square cleanup later)
+    const controlChars = String.fromCharCode(...Array(32).keys());
 
     const fontSize = 16;
     const intervalMs = 50;
@@ -130,7 +193,7 @@
 
     setInterval(drawMatrix, intervalMs);
 
-    // ===== SEQUENCING =====
+    // ===== SIMPLE REVEAL =====
     function clamp(n, min, max) {
       return Math.max(min, Math.min(max, n));
     }
@@ -144,44 +207,21 @@
     }
 
     window.addEventListener('load', () => {
-      const message = document.getElementById('message');
       const piiology = document.getElementById('piiology');
+      const panel = document.getElementById('panel');
 
       const { travelTimeMs, maxStartDelayMs } = computeRainTimings();
 
-      // Base start calculation: rain ~25% down + ~65% streams started
-      let messageStartDelay = (0.25 * travelTimeMs) + (0.65 * maxStartDelayMs);
-
-      // Start 50% sooner than Version 6 (0.125 -> 0.0625)
-      messageStartDelay = clamp(messageStartDelay * 0.0625, 80, 1800);
-
-      const rainBottomMoment = clamp(travelTimeMs + maxStartDelayMs, 2000, 9000);
-
-      let messageFadeInDuration = clamp(rainBottomMoment - messageStartDelay, 900, 7500);
-      messageFadeInDuration = clamp(messageFadeInDuration * 1.35, 900, 12000);
-
-      message.style.transition =
-        `opacity ${messageFadeInDuration}ms cubic-bezier(0.55, 0.0, 1.0, 1.0)`;
-
-      const piiologyStartDelay = messageStartDelay + (0.60 * messageFadeInDuration);
-
-      let piiologyFadeDuration = clamp(messageFadeInDuration * 0.9, 1000, 9000);
-      piiologyFadeDuration = clamp(piiologyFadeDuration * 1.35, 1000, 14000);
-      piiology.style.transition = `opacity ${piiologyFadeDuration}ms ease-in-out`;
-
-      const messageFadeOutStart = piiologyStartDelay + (0.70 * piiologyFadeDuration);
-
-      const piiologyEnd = piiologyStartDelay + piiologyFadeDuration;
-      let fadeOutDuration = clamp((piiologyEnd - messageFadeOutStart) / 0.85, 600, 12000);
-      fadeOutDuration = clamp(fadeOutDuration * 1.35, 600, 16000);
-
-      setTimeout(() => { message.style.opacity = 1; }, messageStartDelay);
-      setTimeout(() => { piiology.style.opacity = 1; }, piiologyStartDelay);
+      let startDelay = (0.25 * travelTimeMs) + (0.65 * maxStartDelayMs);
+      startDelay = clamp(startDelay * 0.0325, 100, 1400);
 
       setTimeout(() => {
-        message.style.transition = `opacity ${fadeOutDuration}ms ease-out`;
-        message.style.opacity = 0;
-      }, messageFadeOutStart);
+        piiology.style.opacity = 1;
+      }, startDelay);
+
+      setTimeout(() => {
+        panel.style.opacity = 1;
+      }, startDelay + 2200);
     });
 
     window.addEventListener('resize', () => {
