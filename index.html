@@ -3,22 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PIIology™</title>
+  <title>PIIology - Digital Rain</title>
   <style>
-    :root{
-      --brandSize: clamp(58px, 7vw, 110px);
-      --bodySize: clamp(24px, 2vw, 34px);
-      --noteSize: clamp(22px, 1.7vw, 28px);
-      --brandColor: rgb(0, 0, 139);
-      --panelBg: rgba(255, 255, 255, 0.55); /* about 45% transparent */
-      --panelBorder: rgba(255, 255, 255, 0.35);
+    :root {
+      --brandBlue: #1226a8;
+      --logoSize: clamp(76px, 8vw, 128px);
+      --bodySize: clamp(24px, 2.1vw, 40px);
+      --metaSize: clamp(19px, 1.7vw, 31px);
+      --metaTitleSize: clamp(28px, 2.5vw, 46px);
+      --thesisSize: clamp(28px, 2.35vw, 44px);
+      --closingSize: clamp(22px, 1.8vw, 33px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #fff;
+      font-family: Georgia, serif;
     }
 
     body {
-      margin: 0;
-      background-color: white;
-      overflow: hidden;
-      font-family: Georgia, serif;
+      position: relative;
     }
 
     canvas {
@@ -36,76 +47,145 @@
       pointer-events: none;
     }
 
-    #piiology {
+    .content-wrap {
       position: absolute;
-      top: 24%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: var(--brandSize);
-      font-weight: bold;
-      color: var(--brandColor);
-      opacity: 0;
-      white-space: nowrap;
-      z-index: 2;
-      transition: opacity 4s ease-in-out;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: clamp(48px, 6vh, 78px) 0 clamp(28px, 4vh, 48px);
     }
 
-    #trademark {
-      font-size: 0.24em;
+    .fade-item {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 1800ms ease, transform 1800ms ease;
+      will-change: opacity, transform;
+    }
+
+    .fade-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #piiology {
+      margin: 0 0 22px;
+      font-size: var(--logoSize);
+      line-height: 0.9;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      color: var(--brandBlue);
+      white-space: nowrap;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+    }
+
+    #trademark,
+    .tm-mark {
+      font-size: 0.23em;
       vertical-align: super;
       margin-left: 0.12em;
     }
 
-    #panel {
-      position: absolute;
-      left: 50%;
-      bottom: 10%;
-      transform: translateX(-50%);
-      width: min(88vw, 1000px);
-      background: var(--panelBg);
-      border: 1px solid var(--panelBorder);
+    .soft-panel {
+      background: rgba(255, 255, 255, 0.24);
       border-radius: 22px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-      padding: 28px 34px;
-      text-align: center;
-      color: var(--brandColor);
-      opacity: 0;
-      z-index: 3;
-      transition: opacity 2.5s ease-in-out;
       backdrop-filter: blur(2px);
       -webkit-backdrop-filter: blur(2px);
     }
 
-    #panel p {
+    .intro-block {
+      width: min(1420px, 90vw);
+      padding: 22px 28px 24px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .intro {
+      margin: 0 auto;
+      max-width: 1350px;
+      font-size: var(--bodySize);
+      line-height: 1.24;
+      color: var(--brandBlue);
+    }
+
+    .meta-band {
+      width: min(1680px, 98vw);
+      padding: 14px 22px 16px;
+      text-align: center;
+      margin-bottom: 16px;
+      background: rgba(255, 255, 255, 0.38);
+      border-radius: 0;
+      backdrop-filter: blur(1.5px);
+      -webkit-backdrop-filter: blur(1.5px);
+    }
+
+    .meta-copy,
+    .meta-title {
       margin: 0;
-      font-size: var(--bodySize);
-      line-height: 1.42;
-      font-weight: normal;
+      color: var(--brandBlue);
+      font-family: Georgia, serif;
+      font-weight: 400;
     }
 
-    #panel .agency {
-      margin-top: 18px;
-      font-size: var(--bodySize);
-      line-height: 1.42;
-      font-weight: normal; /* no bold */
+    .meta-copy {
+      max-width: 1480px;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: var(--metaSize);
+      line-height: 1.22;
     }
 
-    #panel .footer-note {
-      margin-top: 22px;
-      font-size: var(--noteSize);
-      line-height: 1.35;
-      font-weight: normal;
+    .meta-title {
+      margin-top: 6px;
+      font-size: var(--metaTitleSize);
+      line-height: 1.14;
     }
 
-    @media (max-width: 700px) {
-      #piiology {
-        top: 20%;
+    .thesis-block {
+      width: min(1500px, 92vw);
+      padding: 12px 18px 13px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .thesis {
+      margin: 0;
+      font-size: var(--thesisSize);
+      line-height: 1.18;
+      color: var(--brandBlue);
+    }
+
+    .closing-block {
+      width: min(1300px, 88vw);
+      padding: 10px 16px 12px;
+      text-align: center;
+    }
+
+    .closing {
+      margin: 0;
+      font-size: var(--closingSize);
+      line-height: 1.16;
+      color: var(--brandBlue);
+    }
+
+    @media (max-width: 1100px) {
+      .content-wrap {
+        padding-top: 36px;
       }
 
-      #panel {
-        width: 92vw;
-        bottom: 6%;
-        padding: 22px 20px;
+      #piiology {
+        white-space: normal;
+        text-align: center;
+      }
+
+      .intro-block,
+      .thesis-block,
+      .closing-block {
+        width: min(94vw, 1500px);
+      }
+
+      .meta-band {
+        width: min(96vw, 1680px);
       }
     }
   </style>
@@ -114,37 +194,44 @@
   <canvas id="matrix"></canvas>
 
   <div id="container">
-    <div id="piiology">
-      PIIology<span id="trademark">™</span>
-    </div>
-
-    <div id="panel">
-      <p>
-        PIIology is developing a platform that gives consumers the level of control and privacy they choose over their personal data.
-        In turn, the organizations they choose to share it with gain access to higher-quality, fresher, and richer data sets for
-        onboarding, personalization, grounding, and context.
-      </p>
-
-      <div class="agency">
-        We are advancing a new model of Personal Data Agency.
+    <div class="content-wrap">
+      <div id="piiology" class="fade-item">
+        PIIology<span id="trademark">TM</span>
       </div>
 
-      <div class="footer-note">
-        The work has been underway for years. The movement begins now.
+      <div class="intro-block soft-panel fade-item">
+        <p class="intro">
+          PIIology is developing a platform that gives consumers the level of
+          control and privacy they choose over their personal data. In turn,
+          the organizations they choose to share it with gain access to
+          higher-quality, fresher, and richer data sets for onboarding,
+          personalization, grounding, and context.
+        </p>
+      </div>
+
+      <div class="meta-band fade-item">
+        <p class="meta-copy">
+          By assembling your data from many different sources and many different aspects of your data,
+          we help you understand what others see from your data. Its what we call
+        </p>
+        <p class="meta-title">
+          The Meta View Of The Digital You<span class="tm-mark">TM</span>
+        </p>
+      </div>
+
+      <div class="thesis-block soft-panel fade-item">
+        <p class="thesis">We are advancing a new model of Personal Data Agency.</p>
+      </div>
+
+      <div class="closing-block soft-panel fade-item">
+        <p class="closing">The work has been underway for years. The movement begins now.</p>
       </div>
     </div>
   </div>
 
   <script>
-    // ===== RAIN =====
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
-
-    function sizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    sizeCanvas();
 
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const numbers = '0123456789';
@@ -153,9 +240,32 @@
     const fontSize = 16;
     const intervalMs = 50;
 
-    let columns = Math.floor(canvas.width / fontSize);
-    let drops = Array(columns).fill(1);
-    let startDelays = Array(columns).fill(0).map(() => Math.random() * 2000);
+    let columns = 0;
+    let drops = [];
+    let startDelays = [];
+
+    function sizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function resetRain() {
+      columns = Math.floor(canvas.width / fontSize);
+      drops = Array(columns).fill(1);
+      startDelays = Array(columns).fill(0).map(() => Math.random() * 2000);
+    }
+
+    function pickRainChar() {
+      const randomIndex = Math.floor(Math.random() * 100);
+
+      if (randomIndex < 45) {
+        return letters.charAt(Math.floor(Math.random() * letters.length));
+      } else if (randomIndex < 85) {
+        return numbers.charAt(Math.floor(Math.random() * numbers.length));
+      }
+
+      return controlChars.charAt(Math.floor(Math.random() * controlChars.length));
+    }
 
     function drawMatrix() {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
@@ -169,19 +279,8 @@
           continue;
         }
 
-        const randomIndex = Math.floor(Math.random() * 100);
-        let ch;
-
-        if (randomIndex < 45) {
-          ch = letters.charAt(Math.floor(Math.random() * letters.length));
-        } else if (randomIndex < 85) {
-          ch = numbers.charAt(Math.floor(Math.random() * numbers.length));
-        } else {
-          ch = controlChars.charAt(Math.floor(Math.random() * controlChars.length));
-        }
-
         ctx.fillStyle = 'rgb(0, 100, 0)';
-        ctx.fillText(ch, i * fontSize, drops[i] * fontSize);
+        ctx.fillText(pickRainChar(), i * fontSize, drops[i] * fontSize);
 
         if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
           drops[i] = 0;
@@ -191,44 +290,25 @@
       }
     }
 
+    function revealSequence() {
+      const items = Array.from(document.querySelectorAll('.fade-item'));
+
+      items.forEach((item, index) => {
+        setTimeout(() => {
+          item.classList.add('visible');
+        }, 350 + index * 460);
+      });
+    }
+
+    sizeCanvas();
+    resetRain();
     setInterval(drawMatrix, intervalMs);
 
-    // ===== SIMPLE REVEAL =====
-    function clamp(n, min, max) {
-      return Math.max(min, Math.min(max, n));
-    }
-
-    function computeRainTimings() {
-      const rows = canvas.height / fontSize;
-      const fps = 1000 / intervalMs;
-      const travelTimeMs = (rows / fps) * 1000;
-      const maxStartDelayMs = startDelays.reduce((m, v) => Math.max(m, v), 0);
-      return { travelTimeMs, maxStartDelayMs };
-    }
-
-    window.addEventListener('load', () => {
-      const piiology = document.getElementById('piiology');
-      const panel = document.getElementById('panel');
-
-      const { travelTimeMs, maxStartDelayMs } = computeRainTimings();
-
-      let startDelay = (0.25 * travelTimeMs) + (0.65 * maxStartDelayMs);
-      startDelay = clamp(startDelay * 0.0325, 100, 1400);
-
-      setTimeout(() => {
-        piiology.style.opacity = 1;
-      }, startDelay);
-
-      setTimeout(() => {
-        panel.style.opacity = 1;
-      }, startDelay + 2200);
-    });
+    window.addEventListener('load', revealSequence);
 
     window.addEventListener('resize', () => {
       sizeCanvas();
-      columns = Math.floor(canvas.width / fontSize);
-      drops = Array(columns).fill(1);
-      startDelays = Array(columns).fill(0).map(() => Math.random() * 2000);
+      resetRain();
     });
   </script>
 </body>
